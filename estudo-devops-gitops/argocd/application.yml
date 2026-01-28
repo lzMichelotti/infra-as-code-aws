@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/lzMichelotti/infra-as-code-aws.git
     targetRevision: HEAD
-    path: .
+    path: estudo-devops-gitops
   destination:
     server: https://kubernetes.default.svc
     namespace: default
