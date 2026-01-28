@@ -1,91 +1,120 @@
-# Projeto de Infraestrutura como Código e GitOps para Aplicação Web Full-Stack
+# Estudo DevOps: Infraestrutura como Código e GitOps na AWS
 
-Este repositório contém o código-fonte de uma aplicação web full-stack, a infraestrutura como código (IaC) para provisionar os recursos na AWS, e as configurações de GitOps para automação do deploy.
+Este repositório é um projeto de estudo completo que demonstra um fluxo de trabalho de DevOps moderno para implantar uma aplicação full-stack na AWS. Ele abrange desde a provisionamento da infraestrutura com Terraform até a implantação contínua com GitOps usando ArgoCD.
 
-## Visão Geral da Arquitetura
+## Visão Geral para DevOps
 
-O projeto é composto por três partes principais:
+O objetivo deste projeto é fornecer um exemplo prático de como automatizar a criação e a gestão de uma arquitetura de nuvem robusta e o ciclo de vida de uma aplicação.
 
-1.  **Aplicação**: Uma aplicação web com um frontend em Next.js e um backend em ASP.NET Core.
-2.  **Infraestrutura como Código (IaC)**: Código Terraform para provisionar a infraestrutura na AWS, incluindo a rede e um cluster EKS.
-3.  **GitOps**: Manifestos Kubernetes e configuração do ArgoCD para o deploy contínuo da aplicação no cluster EKS.
-
----
-
-## 1. Aplicação (`meu-projeto-devops`)
-
-O código-fonte da aplicação está localizado na pasta `meu-projeto-devops/dvn-workshop-apps`.
-
-### Backend
-
--   **Localização**: `meu-projeto-devops/dvn-workshop-apps/backend/YoutubeLiveApp`
--   **Framework**: ASP.NET Core
--   **Descrição**: Uma API web que serve como backend para a aplicação. Inclui health checks e documentação de API com Swagger, que é exposto no endpoint `/backend/swagger`.
-
-### Frontend
-
--   **Localização**: `meu-projeto-devops/dvn-workshop-apps/frontend/youtube-live-app`
--   **Framework**: Next.js com TypeScript e Tailwind CSS
--   **Descrição**: A interface de usuário da aplicação, intitulada "Workshop DevOps na Nuvem v2.0".
+O fluxo de trabalho principal é:
+1.  **Infraestrutura como Código (IaC)**: O Terraform é usado para definir e provisionar toda a infraestrutura de nuvem de forma declarativa e reprodutível.
+2.  **Conteinerização**: A aplicação (frontend e backend) é conteinerizada usando Docker, garantindo consistência entre os ambientes.
+3.  **Orquestração**: O Amazon EKS (Kubernetes) é usado para orquestrar os contêineres, gerenciando o escalonamento, a disponibilidade e o networking.
+4.  **Entrega Contínua com GitOps**: O ArgoCD é usado para implementar o GitOps. O repositório Git é a única fonte da verdade. Qualquer alteração nos manifestos ou na versão da imagem no Git é automaticamente sincronizada com o cluster Kubernetes.
 
 ---
 
-## 2. Infraestrutura como Código (`meu-projeto-devops/terraform`)
+## Estrutura do Repositório
 
-A infraestrutura é gerenciada com Terraform e está dividida em três stacks para modularidade.
-
-### Stack 00: Remote Backend (`00-remote-backend-stack`)
-
--   **Descrição**: Esta stack provisiona os recursos necessários para o armazenamento do estado do Terraform (remote state).
--   **Recursos**:
-    -   Um bucket S3 (`meu-projeto-devops-tfstate`) para armazenar os arquivos de estado (`.tfstate`).
-    -   Uma tabela no DynamoDB para o controle de lock do estado, garantindo a consistência em execuções concorrentes.
-
-### Stack 01: Rede (`01-networking-stack`)
-
--   **Descrição**: Provisiona toda a infraestrutura de rede (VPC) para a aplicação.
--   **Recursos**:
-    -   VPC (Virtual Private Cloud).
-    -   Subnets públicas e privadas.
-    -   Internet Gateway para acesso à internet nas subnets públicas.
-    -   NAT Gateway para permitir que os recursos nas subnets privadas acessem a internet.
-    -   Tabelas de rotas para controlar o fluxo de tráfego.
-
-### Stack 02: Cluster EKS (`02-eks-cluster-stack`)
-
--   **Descrição**: Provisiona o cluster Kubernetes gerenciado pela AWS.
--   **Recursos**:
-    -   Cluster Amazon EKS (Elastic Kubernetes Service).
-    -   Node Group de instâncias EC2 que se juntarão ao cluster.
-    -   IAM Roles e Policies necessárias para o funcionamento do cluster e dos nodes.
+-   `README.md`: Este arquivo.
+-   `estudo-devops/`: Contém o código-fonte da aplicação e o código da infraestrutura.
+    -   `dvn-workshop-apps/`: O código da aplicação.
+        -   `backend/`: Aplicação ASP.NET Core.
+        -   `frontend/`: Aplicação Next.js.
+    -   `terraform/`: Código Terraform dividido em stacks (backend, networking, EKS).
+-   `estudo-devops-gitops/`: Contém os manifestos Kubernetes para a implantação via GitOps.
+    -   `argocd/`: Definição da `Application` do ArgoCD.
+    -   `backend/`, `frontend/`: Manifestos de `Deployment` e `Service` do Kubernetes.
+    -   `kustomization.yml`: Arquivo Kustomize que gerencia os manifestos e as imagens de contêiner.
 
 ---
 
-## 3. GitOps (`meu-projeto-devops-gitops`)
+## Stack de Tecnologia
 
-A automação do deploy é feita utilizando a abordagem GitOps com ArgoCD e Kustomize.
+-   **Cloud**: AWS
+-   **IaC**: Terraform
+-   **Orquestração de Contêineres**: Amazon EKS (Kubernetes)
+-   **Conteinerização**: Docker
+-   **GitOps**: ArgoCD, Kustomize
+-   **Aplicação**: Next.js (Frontend), ASP.NET Core (Backend)
 
-### ArgoCD
+---
 
--   **Localização do arquivo**: `meu-projeto-devops-gitops/argocd/application.yml`
--   **Descrição**: Define uma aplicação no ArgoCD chamada `dvn-workshop-jan`.
--   **Configuração**:
-    -   Aponta para o repositório `https://github.com/lzMichelotti/infra-as-code-aws.git`.
-    -   Monitora o caminho `.` (a raiz do repositório `meu-projeto-devops-gitops`).
-    -   Faz o deploy dos manifestos no namespace `default` do cluster Kubernetes onde o ArgoCD está sendo executado.
-    -   A política de sincronização (`syncPolicy`) está configurada com `selfHeal: true`, o que significa que o ArgoCD tentará corrigir automaticamente qualquer desvio entre o estado desejado (no Git) and o estado atual (no cluster).
+## Pipeline de Implantação (CI/CD)
 
-### Kustomize
+Este projeto foca na parte de **Entrega Contínua (CD)** com GitOps.
 
--   **Localização do arquivo**: `meu-projeto-devops-gitops/kustomization.yml`
--   **Descrição**: Orquestra a geração dos manifestos Kubernetes.
--   **Recursos**:
-    -   Inclui os deployments e services para o frontend e o backend.
-    -   Gerencia as imagens de container, apontando para um repositório ECR (`236510206699.dkr.ecr.us-west-1.amazonaws.com/infra-as-code-aws/production/...`).
+1.  **Gatilho**: Uma alteração é mesclada no branch `master` do repositório Git. Isso pode ser uma atualização nos manifestos do Kubernetes, no `kustomization.yml` (por exemplo, uma nova tag de imagem) ou no próprio código da aplicação.
+2.  **Detecção**: O ArgoCD, que monitora o repositório, detecta que o estado definido no Git é diferente do estado atual no cluster EKS.
+3.  **Sincronização**: O ArgoCD inicia o processo de sincronização, aplicando as alterações necessárias ao cluster. Isso pode envolver a criação, atualização ou exclusão de recursos do Kubernetes.
+4.  **Implantação**: O Kubernetes realiza um rolling update para implantar a nova versão da aplicação sem tempo de inatividade.
 
-### Manifestos Kubernetes
+*Nota: Um pipeline de **Integração Contínua (CI)** completo (não implementado aqui) seria responsável por rodar testes, construir as imagens Docker e enviá-las para um registro de contêineres (como o Amazon ECR) antes que o processo de CD comece.*
 
--   **Localização**: Pastas `frontend` e `backend` dentro de `meu-projeto-devops-gitops`.
--   **Descrição**: Contêm os arquivos `deployment.yml` e `service.yml` que definem como a aplicação será executada e exposta no Kubernetes.
--   **Deployments**: Definem os pods da aplicação, incluindo a imagem do container e o número de réplicas.
--   **Services**: Expõem os deployments como um serviço de rede, permitindo a comunicação entre o frontend, o backend e o tráfego externo.
+---
+
+## Como Implantar
+
+Siga os passos abaixo para provisionar a infraestrutura e implantar a aplicação.
+
+### Pré-requisitos
+
+-   [Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
+-   [AWS CLI](https://aws.amazon.com/cli/) com credenciais configuradas
+-   [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+-   [`docker`](https://docs.docker.com/get-docker/) (Opcional, se você for construir suas próprias imagens)
+
+### Passos da Implantação
+
+1.  **Provisionar a Infraestrutura com Terraform**:
+    -   Navegue para cada pasta dentro de `estudo-devops/terraform` na ordem de `00` a `02` e execute `terraform init` e `terraform apply`.
+
+    ```sh
+    # 1. Backend Remoto
+    cd estudo-devops/terraform/00-remote-backend-stack/
+    terraform init && terraform apply -auto-approve
+
+    # 2. Rede
+    cd ../01-networking-stack/
+    terraform init && terraform apply -auto-approve
+
+    # 3. Cluster EKS
+    cd ../02-eks-cluster-stack/
+    terraform init && terraform apply -auto-approve
+    ```
+
+2.  **Configurar o `kubectl`**:
+    -   Após a criação do cluster EKS, configure seu `kubectl` para se conectar a ele. O Terraform fornecerá o comando necessário na saída.
+
+    ```sh
+    aws eks update-kubeconfig --region <sua-regiao> --name <nome-do-cluster>
+    ```
+
+3.  **Implantar o ArgoCD no Cluster**:
+    -   Crie o namespace e instale o ArgoCD.
+
+    ```sh
+    kubectl create namespace argocd
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    ```
+
+4.  **Implantar a Aplicação via ArgoCD**:
+    -   Aplique o manifesto da `Application` que instrui o ArgoCD a gerenciar seu projeto.
+
+    ```sh
+    kubectl apply -f estudo-devops-gitops/argocd/application.yml
+    ```
+    - O ArgoCD irá então ler a configuração do `estudo-devops-gitops` no repositório e implantar o frontend e o backend no cluster.
+
+5.  **Verificar a Implantação**:
+    -   Verifique os pods no namespace `default` para ver se a aplicação está rodando.
+
+    ```sh
+    kubectl get pods -n default
+    ```
+    -   Acesse a UI do ArgoCD para monitorar o status da sincronização e da saúde da aplicação.
+
+    ```sh
+    kubectl port-forward svc/argocd-server -n argocd 8080:443
+    ```
+    -   Acesse `https://localhost:8080` no seu navegador.
